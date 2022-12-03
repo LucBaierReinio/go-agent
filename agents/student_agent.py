@@ -55,7 +55,7 @@ class StudentAgent(Agent):
         # if no root instantiated yet 
 
         if (self.root == None):
-            self.root = MCTSNode(None, deepcopy(my_pos), deepcopy(adv_pos), max_step, deepcopy(chess_board), None, True)
+            self.root = MCTSNode(None, deepcopy(my_pos), deepcopy(adv_pos), max_step, deepcopy(chess_board), None, True,1)
             self.root.time_limit = 1.98  
             self.root.build_tree()
             self.root = self.root.find_best_child()
@@ -78,7 +78,7 @@ class StudentAgent(Agent):
                     break
             # if not found, create new root
             if (not found):
-                self.root = MCTSNode(None, deepcopy(my_pos), deepcopy(adv_pos), max_step, deepcopy(chess_board), None, True)
+                self.root = MCTSNode(None, deepcopy(my_pos), deepcopy(adv_pos), max_step, deepcopy(chess_board), None, True,1)
                 self.root.this_time = curTime
                 
             # build tree, find move.
@@ -88,7 +88,7 @@ class StudentAgent(Agent):
 
 
 class MCTSNode: 
-        def __init__(self, parent, my_pos, adv_pos, max_step, chess_board, move, my_turn, depth = 1):
+        def __init__(self, parent, my_pos, adv_pos, max_step, chess_board, move, my_turn, depth):
             self.parent = parent
             self.chess_board = chess_board
             self.times_visited = 0
@@ -191,8 +191,8 @@ class MCTSNode:
         Get all children moves for this node. 
         """
         def expand(self):
-            moveStack = deque() # keep track of moves not expanded
-            positionsConsidered = deque() # revisit list (avoid revisiting positions)
+            moveStack = [] # keep track of moves not expanded
+            positionsConsidered = [] # revisit list (avoid revisiting positions)
 
             if (self.my_turn):
                 moveStack.append((deepcopy(self.my_pos[0]), deepcopy(self.my_pos[1]), 0)) # tuples in moveStack of the form (x, y), depth from start
@@ -217,7 +217,6 @@ class MCTSNode:
                         new_board[positionOfMoveBeingConsidered[0] + move[0], positionOfMoveBeingConsidered[1] + move[1], self.opposites[self.dir_map[key]]] = True
 
                         if (self.my_turn): # add different nodes depending on whos turn this node represents
-            
                             child = MCTSNode(self, deepcopy(positionOfMoveBeingConsidered), deepcopy(self.adv_pos), self.max_step, new_board, (positionOfMoveBeingConsidered[0], positionOfMoveBeingConsidered[1], self.dir_map[key]), not self.my_turn, self.depth+1) # note flip my_pos, adv_pos, flip who's turn
                             child.this_time = self.this_time
                             self.children.append(child) # add viable move to children
@@ -243,7 +242,7 @@ class MCTSNode:
                             if self.dir_map[key] == 3 and (positionOfMoveBeingConsidered[0], positionOfMoveBeingConsidered[1] - 1) not in positionsConsidered:
                                  moveStack.append((positionOfMoveBeingConsidered[0], positionOfMoveBeingConsidered[1] - 1, moveDepth + 1)) # add this move to the stack 
 
-        
+        # Note this function is taken from world.py    
         def check_endgame(self, board, board_size, player_1, player_2):
             """
             Check if the game ends and compute the current score of the agents.
@@ -364,7 +363,7 @@ class MCTSNode:
                 
 
         """
-        Make a random move in the simulation.
+        Make a random move in the simulation. Note this logic is similar to random move from world.py
         """
         def make_random_move(self, board, turn_player, other_player):
             # if stuck (can't move, find where to put barrier)
@@ -412,14 +411,12 @@ class MCTSNode:
         def build_tree(self):
             while (time.time() - self.this_time < self.time_limit): #Tree depth 
                 selected_node = self
-
+            
                 # select nodes
                 while (len(selected_node.children) != 0):
                     selected_node = selected_node.select_child()
-
                 # expand children of leaf node that was selected
                 selected_node.expand()
-
                 # run simulation and propogate result
                 for child in selected_node.children: 
                     result = 0
